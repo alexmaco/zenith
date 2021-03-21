@@ -649,6 +649,7 @@ fn render_process(
     f: &mut Frame<'_, ZBackend>,
     selected_section: &Section,
     process_message: &Option<String>,
+    scroll: u16,
 ) {
     let style = match selected_section {
         Section::Process => Style::default().fg(Color::Red),
@@ -817,36 +818,37 @@ fn render_process(
         ]));
     }
 
-    if text.len() > v_sections[1].height as usize * 3 {
-        let h_sections = Layout::default()
-            .direction(Direction::Horizontal)
-            .margin(0)
-            .constraints(
-                [
-                    Constraint::Percentage(50),
-                    Constraint::Length(1),
-                    Constraint::Percentage(50),
-                ]
-                .as_ref(),
-            )
-            .split(v_sections[1]);
+    // if text.len() > v_sections[1].height as usize * 3 {
+    //     let h_sections = Layout::default()
+    //         .direction(Direction::Horizontal)
+    //         .margin(0)
+    //         .constraints(
+    //             [
+    //                 Constraint::Percentage(50),
+    //                 Constraint::Length(1),
+    //                 Constraint::Percentage(50),
+    //             ]
+    //             .as_ref(),
+    //         )
+    //         .split(v_sections[1]);
 
-        let second_part = text.split_off(h_sections[0].height as usize * 3);
-        Paragraph::new(text)
-            .block(Block::default())
-            .wrap(Wrap { trim: false })
-            .render(f, h_sections[0]);
+    //     let second_part = text.split_off(h_sections[0].height as usize * 3);
+    //     Paragraph::new(text)
+    //         .block(Block::default())
+    //         .wrap(Wrap { trim: false })
+    //         .render(f, h_sections[0]);
 
-        Paragraph::new(second_part)
-            .block(Block::default())
-            .wrap(Wrap { trim: false })
-            .render(f, h_sections[2]);
-    } else {
-        Paragraph::new(text)
-            .block(Block::default())
-            .wrap(Wrap { trim: true })
-            .render(f, v_sections[1]);
-    }
+    //     Paragraph::new(second_part)
+    //         .block(Block::default())
+    //         .wrap(Wrap { trim: false })
+    //         .render(f, h_sections[2]);
+    // } else {
+    Paragraph::new(text)
+        .block(Block::default())
+        .wrap(Wrap { trim: true })
+        .scroll((scroll, 0))
+        .render(f, v_sections[1]);
+    // }
 }
 
 fn render_disk(
@@ -1659,6 +1661,7 @@ pub struct TerminalRenderer<'a> {
     app: CPUTimeApp,
     events: Events,
     process_table_row_start: usize,
+    process_view_scroll: u16,
     gfx_device_index: usize,
     /// Index in the vector below is "order" on the screen starting from the top
     /// (usually CPU) while value is the section it belongs to and its current height (as %).
@@ -1714,6 +1717,7 @@ impl<'a> TerminalRenderer<'_> {
             app,
             events,
             process_table_row_start: 0,
+            process_view_scroll: 0,
             gfx_device_index: 0,
             section_geometry: section_geometry.clone(),
             zoom_factor: 1,
@@ -1801,6 +1805,7 @@ impl<'a> TerminalRenderer<'_> {
             let mut highlighted_process: Option<ZProcess> = None;
             let process_table = filter_process_table(app, &self.filter);
             let gfx_device_index = &self.gfx_device_index;
+            let scroll = self.process_view_scroll;
 
             if !process_table.is_empty() && self.highlighted_row >= process_table.len() {
                 self.highlighted_row = process_table.len() - 1;
@@ -1885,6 +1890,7 @@ impl<'a> TerminalRenderer<'_> {
                                             &mut f,
                                             &selected,
                                             process_message,
+                                            scroll,
                                         );
                                     }
                                 }
@@ -1975,6 +1981,7 @@ impl<'a> TerminalRenderer<'_> {
             Key::Enter => {
                 self.app.select_process(highlighted_process);
                 self.process_message = None;
+                self.process_view_scroll = 0;
                 self.show_find = false;
                 self.process_table_row_start = 0;
             }
@@ -2014,7 +2021,11 @@ impl<'a> TerminalRenderer<'_> {
                 self.gfx_device_index -= 1;
             }
         } else if selected == Section::Process {
-            if self.app.selected_process.is_some() || process_table.is_empty() {
+            if self.app.selected_process.is_some() {
+                self.process_view_scroll = self.process_view_scroll.saturating_sub(delta as u16);
+                return;
+            }
+            if process_table.is_empty() {
                 return;
             }
 
@@ -2049,7 +2060,11 @@ impl<'a> TerminalRenderer<'_> {
                 self.gfx_device_index += 1;
             }
         } else if selected == Section::Process {
-            if self.app.selected_process.is_some() || process_table.is_empty() {
+            if self.app.selected_process.is_some() {
+                self.process_view_scroll += delta as u16;
+                return;
+            }
+            if process_table.is_empty() {
                 return;
             }
 
