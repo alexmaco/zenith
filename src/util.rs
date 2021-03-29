@@ -1,17 +1,20 @@
 #![allow(dead_code)]
-/**
- * Copyright 2019-2020, Benjamin Vaisvil and the zenith contributors
- */
 use crate::constants::DEFAULT_TICK;
 use crossterm::{event, event::Event as CEvent, event::KeyCode as Key, event::KeyEvent};
 use signal_hook::consts::signal::{SIGABRT, SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
+/**
+ * Copyright 2019-2020, Benjamin Vaisvil and the zenith contributors
+ */
+use std::borrow::Cow;
 use std::fs::{remove_file, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::thread;
 use std::time::Duration;
+use tui::style::{Modifier, Style};
+use tui::text::Span;
 
 pub enum Event<I> {
     Input(I),
@@ -165,4 +168,11 @@ pub fn percent_of(numerator: u64, denominator: u64) -> f32 {
     } else {
         (numerator as f32 / denominator as f32) * 100.0
     }
+}
+
+pub fn bold<'a, T>(t: T) -> Span<'a>
+where
+    T: Into<Cow<'a, str>>,
+{
+    Span::styled(t, Style::default().add_modifier(Modifier::BOLD))
 }

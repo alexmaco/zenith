@@ -356,7 +356,7 @@ fn render_cpu_histogram(app: &CPUTimeApp, area: Rect, f: &mut Frame<'_, ZBackend
     };
     let title = cpu_title(&app, h.data());
     Sparkline::default()
-        .block(Block::default().title(title.as_str()))
+        .block(Block::default().title(bold(title)))
         .data(h.data())
         .style(Style::default().fg(Color::Blue))
         .max(100)
@@ -370,7 +370,7 @@ fn render_memory_histogram(app: &CPUTimeApp, area: Rect, f: &mut Frame<'_, ZBack
     };
     let title2 = mem_title(&app);
     Sparkline::default()
-        .block(Block::default().title(title2.as_str()))
+        .block(Block::default().title(bold(title2)))
         .data(h.data())
         .style(Style::default().fg(Color::Cyan))
         .max(100)
@@ -555,10 +555,10 @@ fn render_net(
     let up_max_bytes = float_to_byte_string!(up_max as f64, ByteUnit::B);
 
     Sparkline::default()
-        .block(
-            Block::default()
-                .title(format!("↑ [{:^10}/s] Max [{:^10}/s]", net_up, up_max_bytes).as_str()),
-        )
+        .block(Block::default().title(bold(format!(
+            "↑ [{:^10}/s] Max [{:^10}/s]",
+            net_up, up_max_bytes
+        ))))
         .data(h_out.data())
         .style(Style::default().fg(Color::LightYellow))
         .max(up_max)
@@ -579,10 +579,10 @@ fn render_net(
     };
     let down_max_bytes = float_to_byte_string!(down_max as f64, ByteUnit::B);
     Sparkline::default()
-        .block(
-            Block::default()
-                .title(format!("↓ [{:^10}/s] Max [{:^10}/s]", net_down, down_max_bytes).as_str()),
-        )
+        .block(Block::default().title(bold(format!(
+            "↓ [{:^10}/s] Max [{:^10}/s]",
+            net_down, down_max_bytes
+        ))))
         .data(h_in.data())
         .style(Style::default().fg(Color::LightMagenta))
         .max(down_max)
@@ -856,24 +856,17 @@ fn render_disk(
     };
     let read_max_bytes = float_to_byte_string!(read_max as f64, ByteUnit::B);
 
-    let top_reader = match app.top_disk_reader_pid {
-        Some(pid) => match app.process_map.get(&pid) {
-            Some(p) => format!("[{:} - {:} - {:}]", p.pid, p.name, p.user_name),
-            None => String::from(""),
-        },
-        None => String::from(""),
-    };
+    let top_reader = app
+        .top_disk_reader_pid
+        .and_then(|pid| app.process_map.get(&pid))
+        .map(|p| format!("[{:} - {:} - {:}]", p.pid, p.name, p.user_name))
+        .unwrap_or_default();
 
     Sparkline::default()
-        .block(
-            Block::default().title(
-                format!(
-                    "R [{:^10}/s] Max [{:^10}/s] {:}",
-                    read_up, read_max_bytes, top_reader
-                )
-                .as_str(),
-            ),
-        )
+        .block(Block::default().title(bold(format!(
+            "R [{:^10}/s] Max [{:^10}/s] {:}",
+            read_up, read_max_bytes, top_reader
+        ))))
         .data(h_read.data())
         .style(Style::default().fg(Color::LightYellow))
         .max(read_max)
@@ -891,24 +884,17 @@ fn render_disk(
     };
     let write_max_bytes = float_to_byte_string!(write_max as f64, ByteUnit::B);
 
-    let top_writer = match app.top_disk_writer_pid {
-        Some(pid) => match app.process_map.get(&pid) {
-            Some(p) => format!("[{:} - {:} - {:}]", p.pid, p.name, p.user_name),
-            None => String::from(""),
-        },
-        None => String::from(""),
-    };
+    let top_writer = app
+        .top_disk_writer_pid
+        .and_then(|pid| app.process_map.get(&pid))
+        .map(|p| format!("[{:} - {:} - {:}]", p.pid, p.name, p.user_name))
+        .unwrap_or_default();
 
     Sparkline::default()
-        .block(
-            Block::default().title(
-                format!(
-                    "W [{:^10}/s] Max [{:^10}/s] {:}",
-                    write_down, write_max_bytes, top_writer
-                )
-                .as_str(),
-            ),
-        )
+        .block(Block::default().title(bold(format!(
+            "W [{:^10}/s] Max [{:^10}/s] {:}",
+            write_down, write_max_bytes, top_writer
+        ))))
         .data(h_write.data())
         .style(Style::default().fg(Color::LightMagenta))
         .max(write_max)
