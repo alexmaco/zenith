@@ -272,7 +272,7 @@ fn start_zenith(
 
 fn validate_refresh_rate(arg: &str) -> Result<u64, String> {
     let val = arg.parse::<u64>().map_err(|e| e.to_string())?;
-    if val >= 1000 {
+    if val >= 100 {
         Ok(val)
     } else {
         Err(format!(

@@ -342,7 +342,11 @@ fn render_process_table(
         .column_spacing(0)
         .header(
             Row::new(header)
-                .style(Style::default().bg(Color::DarkGray))
+                .style(
+                    Style::default()
+                        .add_modifier(Modifier::BOLD)
+                        .bg(Color::DarkGray),
+                )
                 .bottom_margin(1),
         )
         .render(f, area);
@@ -633,12 +637,14 @@ fn render_process(
         .split(layout);
 
     let title = format!("(b)ack (n)ice (p)riority 0 (s)uspend (r)esume (k)ill [SIGKILL] (t)erminate [SIGTERM] {:} {: >width$}", 
-                        process_message.as_ref().unwrap_or(&String::from("")), "", width = layout.width as usize);
+                        process_message.as_ref().map_or("", |s| s.as_str()), "", width = layout.width as usize);
 
     Block::default()
         .title(Span::styled(
             title,
-            Style::default().bg(Color::DarkGray).fg(Color::White),
+            Style::default()
+                .bg(Color::DarkGray)
+                .add_modifier(Modifier::BOLD),
         ))
         .render(f, v_sections[0]);
 
