@@ -74,7 +74,7 @@ pub fn load_zenith_store(path: &Path, current_time: &SystemTime) -> Option<Histo
             let d = current_time
                 .duration_since(previous_stop)
                 .expect("Current time is before stored time. This should not happen.");
-            let week_ticks = ONE_WEEK / hm.tick.as_secs();
+            let week_ticks = ONE_WEEK * 1000 / hm.tick.as_millis() as u64;
             for (_k, v) in hm.map.iter_mut() {
                 let data = v.data.to_mut();
                 if data.len() as u64 > week_ticks {
@@ -171,7 +171,7 @@ impl HistogramMap {
         let h = if let Some(h) = self.map.get_mut(name) {
             h
         } else {
-            let size = (self.duration.as_secs() / self.tick.as_secs()) as usize; //smallest has to be >= 1000ms
+            let size = (self.duration.as_millis() / self.tick.as_millis()) as usize; //smallest has to be >= 1000ms
             self.map
                 .entry(name.clone())
                 .or_insert_with(|| Histogram::new(size))
@@ -181,8 +181,8 @@ impl HistogramMap {
     }
 
     pub fn hist_duration(&self, width: usize, zoom_factor: u32) -> chrono::Duration {
-        chrono::Duration::from_std(Duration::from_secs_f64(
-            self.tick.as_secs_f64() * width as f64 * zoom_factor as f64,
+        chrono::Duration::from_std(Duration::from_millis(
+            self.tick.as_millis() as u64 * width as u64 * zoom_factor as u64,
         ))
         .expect("Unexpectedly large duration was out of range.")
     }
