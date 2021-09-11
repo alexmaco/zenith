@@ -1214,7 +1214,13 @@ fn render_top_title_bar(
     let battery_widets = render_battery_widget(&app.batteries);
     let battery_start = if !app.batteries.is_empty() { " [" } else { "" };
     let battery_end = if !app.batteries.is_empty() { "]" } else { "" };
-    let line = vec![
+    let not_recording_warning = if app.writes_db_store() {
+        ""
+    } else {
+        "Data not being recorded to database "
+    };
+
+    let mut line = vec![
         Span::styled(
             format!(" {:}", app.hostname),
             default_style.add_modifier(Modifier::BOLD),
@@ -1240,11 +1246,18 @@ fn render_top_title_bar(
         Span::styled("]", default_style),
         Span::styled(" (h)elp", default_style),
         Span::styled(" (q)uit", default_style),
-        Span::styled(
-            format!("{: >width$}", "", width = area.width as usize),
-            default_style,
-        ),
     ];
+
+    let used_width: usize = line.iter().map(|s| s.content.len()).sum();
+    line.push(Span::styled(
+        format!(
+            "{:>width$}",
+            not_recording_warning,
+            width = (area.width as usize - used_width)
+        ),
+        default_style.fg(Color::Red).add_modifier(Modifier::BOLD),
+    ));
+
     Paragraph::new(Spans::from(line)).render(f, area);
 }
 
@@ -1393,7 +1406,7 @@ fn render_section_mgr(list: &mut SectionMGRList<'_>, area: Rect, f: &mut Frame<'
     f.render_stateful_widget(list_widget, layout[1], &mut list.state);
 }
 
-fn render_help(area: Rect, f: &mut Frame<'_, ZBackend>) {
+fn render_help(area: Rect, f: &mut Frame<'_, ZBackend>, db_recording: bool) {
     let help_layout = Layout::default()
         .margin(5)
         .direction(Direction::Vertical)
@@ -1471,6 +1484,22 @@ fn render_help(area: Rect, f: &mut Frame<'_, ZBackend>) {
             Span::styled(*key, key_style),
             Span::styled(*text, main_style),
         ]));
+    }
+
+    if !db_recording {
+        t.push(Spans::from(vec![Span::styled("", header_style)]));
+        for s in [
+            "Recorded data is not being saved to the databse.\n",
+            "This is either because another zenith instance is running,\n",
+            "or because zenith was stareted with the `--disable_history` flag.\n",
+        ]
+        .iter()
+        {
+            t.push(Spans::from(vec![Span::styled(
+                *s,
+                Style::default().fg(Color::Yellow),
+            )]));
+        }
     }
 
     let b = Block::default().borders(Borders::ALL);
@@ -1725,7 +1754,7 @@ impl<'a> TerminalRenderer<'_> {
                             .split(f.size());
 
                         render_top_title_bar(app, v_sections[0], &mut f, zf, offset);
-                        render_help(v_sections[1], &mut f);
+                        render_help(v_sections[1], &mut f, app.writes_db_store());
                     } else if show_section_mgr {
                         let v_sections = Layout::default()
                             .direction(Direction::Vertical)

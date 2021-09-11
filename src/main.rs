@@ -176,7 +176,7 @@ fn start_zenith(
     process_height: u16,
     sensor_height: u16,
     graphics_height: u16,
-    disable_history: bool,
+    mut disable_history: bool,
     db_path: &str,
 ) -> Result<(), Box<dyn Error>> {
     debug!("Starting with Arguments: rate: {}, cpu: {}, net: {}, disk: {}, process: {}, graphics: {}, disable_history: {}, db_path: {}",
@@ -192,7 +192,6 @@ fn start_zenith(
 
     let db_path = Path::new(db_path);
 
-    let mut disable_history = disable_history;
     if !disable_history {
         match use_db_history(db_path, rate) {
             Some(r) => {
@@ -225,20 +224,17 @@ fn start_zenith(
             debug!("Creating Lock");
 
             let lock_path = db_path.join(".zenith.lock");
-            let lock = match util::Lockfile::new(main_pid, &lock_path).await {
-                Some(f) => f,
+            match util::Lockfile::new(main_pid, &lock_path).await {
+                Some(f) => (Some(db_path.to_owned()), Some(f)), // keeps the lock handle alive
                 None => {
-                    let msg = format!(
+                    warn!(
                         "{:} exists and history recording is on. Is another copy of zenith \
                             open? If not remove the path and open zenith again.",
                         lock_path.display()
                     );
-                    exit_with_message!(msg, 1);
+                    (None, None)
                 }
-            };
-
-            // keeps the lock handle alive
-            (Some(db_path.to_owned()), Some(lock))
+            }
         } else {
             (None, None)
         };
