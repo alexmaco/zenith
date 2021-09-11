@@ -2109,6 +2109,7 @@ impl<'a> TerminalRenderer<'_> {
             Key::Esc | Key::Char('b') => {
                 self.app.selected_process = None;
                 self.process_message = None;
+                self.show_find = !self.filter.is_empty();
             }
             Key::Char('s') => {
                 self.process_message = match &self.app.selected_process {
