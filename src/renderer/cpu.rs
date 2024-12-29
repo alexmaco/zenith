@@ -2,11 +2,11 @@
  * Copyright 2019-2022, Benjamin Vaisvil and the zenith contributors
  */
 use super::style::{max_style, ok_style, MAX_COLOR, OK_COLOR};
-use crate::float_to_byte_string;
+use super::ToBytesString;
 use crate::metrics::histogram::{HistogramKind, View};
 use crate::metrics::CPUTimeApp;
 use crate::renderer::{percent_of, split_left_right_pane, Render};
-use byte_unit::{Byte, Unit};
+use byte_unit::Unit;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
@@ -92,8 +92,8 @@ fn mem_title(app: &CPUTimeApp) -> Line {
         Span::styled(
             format!(
                 "{} / {} - {:}%",
-                float_to_byte_string!(app.mem_utilization as f64, Unit::KB),
-                float_to_byte_string!(app.mem_total as f64, Unit::KB),
+                app.mem_utilization.to_bytes_str_in(Unit::KB),
+                app.mem_total.to_bytes_str_in(Unit::KB),
                 mem
             ),
             if mem > 95 { max_style() } else { ok_style() },
@@ -102,8 +102,8 @@ fn mem_title(app: &CPUTimeApp) -> Line {
         Span::styled(
             format!(
                 "{} / {} - {:}%",
-                float_to_byte_string!(app.swap_utilization as f64, Unit::KB),
-                float_to_byte_string!(app.swap_total as f64, Unit::KB),
+                app.swap_utilization.to_bytes_str_in(Unit::KB),
+                app.swap_total.to_bytes_str_in(Unit::KB),
                 swp,
             ),
             if swp > 20 { max_style() } else { ok_style() },

@@ -1,11 +1,9 @@
 /**
  * Copyright 2019-2022, Benjamin Vaisvil and the zenith contributors
  */
-use super::{split_left_right_pane, Render};
-use crate::float_to_byte_string;
+use super::{split_left_right_pane, Render, ToBytesString};
 use crate::metrics::histogram::{HistogramKind, View};
 use crate::metrics::CPUTimeApp;
-use byte_unit::{Byte, Unit};
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::Span;
@@ -27,10 +25,7 @@ pub fn render_net(
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
         .split(network_layout[1]);
 
-    let net_up = float_to_byte_string!(
-        app.net_out as f64 / app.histogram_map.tick.as_secs_f64(),
-        Unit::B
-    );
+    let net_up = (app.net_out as f64 / app.histogram_map.tick.as_secs_f64()).to_bytes_str();
     let h_out = match app.histogram_map.get_zoomed(&HistogramKind::NetTx, &view) {
         Some(h) => h,
         None => return,
@@ -40,7 +35,7 @@ pub fn render_net(
         Some(x) => *x,
         None => 1,
     };
-    let up_max_bytes = float_to_byte_string!(up_max as f64, Unit::B);
+    let up_max_bytes = up_max.to_bytes_str();
 
     Sparkline::default()
         .block(
@@ -52,10 +47,7 @@ pub fn render_net(
         .max(up_max)
         .render(f, net[0]);
 
-    let net_down = float_to_byte_string!(
-        app.net_in as f64 / app.histogram_map.tick.as_secs_f64(),
-        Unit::B
-    );
+    let net_down = (app.net_in as f64 / app.histogram_map.tick.as_secs_f64()).to_bytes_str();
     let h_in = match app.histogram_map.get_zoomed(&HistogramKind::NetRx, &view) {
         Some(h) => h,
         None => return,
@@ -65,7 +57,7 @@ pub fn render_net(
         Some(x) => *x,
         None => 1,
     };
-    let down_max_bytes = float_to_byte_string!(down_max as f64, Unit::B);
+    let down_max_bytes = down_max.to_bytes_str();
     Sparkline::default()
         .block(
             Block::default()

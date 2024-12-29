@@ -1,11 +1,10 @@
 /**
  * Copyright 2019-2022, Benjamin Vaisvil and the zenith contributors
  */
-use super::{percent_of, Render};
-use crate::float_to_byte_string;
+use super::{percent_of, Render, ToBytesString};
 use crate::metrics::zprocess::{ProcessStatusExt, ZProcess};
 use crate::metrics::{CPUTimeApp, ProcessTableSortOrder};
-use byte_unit::{Byte, Unit};
+use byte_unit::Unit;
 use chrono::prelude::DateTime;
 use chrono::Local;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -92,18 +91,12 @@ pub fn render_process_table(
                 set_process_row_style(
                     p.pid,
                     app.top_pids.mem.pid,
-                    format!(
-                        "{:>8}",
-                        float_to_byte_string!(p.memory as f64, Unit::KB).replace('B', "")
-                    ),
+                    format!("{:>8}", p.memory.to_bytes_str_in(Unit::KB)),
                 ),
                 set_process_row_style(
                     p.pid,
                     app.top_pids.virt.pid,
-                    format!(
-                        "{:>8}",
-                        float_to_byte_string!(p.virtual_memory as f64, Unit::KB).replace('B', "")
-                    ),
+                    format!("{:>8}", p.virtual_memory.to_bytes_str_in(Unit::KB)),
                 ),
                 Cell::from(format!("{:1}", p.status.to_single_char())),
                 set_process_row_style(
@@ -111,11 +104,9 @@ pub fn render_process_table(
                     app.top_pids.read.pid,
                     format!(
                         "{:>8}",
-                        float_to_byte_string!(
-                            p.get_read_bytes_sec(&app.histogram_map.tick),
-                            Unit::B
-                        )
-                        .replace('B', "")
+                        p.get_read_bytes_sec(&app.histogram_map.tick)
+                            .to_bytes_str()
+                            .replace('B', "")
                     ),
                 ),
                 set_process_row_style(
@@ -123,11 +114,9 @@ pub fn render_process_table(
                     app.top_pids.write.pid,
                     format!(
                         "{:>8}",
-                        float_to_byte_string!(
-                            p.get_write_bytes_sec(&app.histogram_map.tick),
-                            Unit::B
-                        )
-                        .replace('B', "")
+                        p.get_write_bytes_sec(&app.histogram_map.tick)
+                            .to_bytes_str()
+                            .replace('B', "")
                     ),
                 ),
             ];
@@ -363,7 +352,7 @@ pub fn render_process(
         Line::from(vec![
             Span::raw("Total Memory:          "),
             Span::styled(
-                format!("{:>10}", float_to_byte_string!(p.memory as f64, Unit::KB)),
+                format!("{:>10}", p.memory.to_bytes_str_in(Unit::KB)),
                 rhs_style,
             ),
         ]),
@@ -372,8 +361,8 @@ pub fn render_process(
             Span::styled(
                 format!(
                     "{:>10} {:}/s",
-                    float_to_byte_string!(p.read_bytes as f64, Unit::B),
-                    float_to_byte_string!(p.get_read_bytes_sec(&app.histogram_map.tick), Unit::B)
+                    p.read_bytes.to_bytes_str(),
+                    p.get_read_bytes_sec(&app.histogram_map.tick).to_bytes_str(),
                 ),
                 rhs_style,
             ),
@@ -383,8 +372,9 @@ pub fn render_process(
             Span::styled(
                 format!(
                     "{:>10} {:}/s",
-                    float_to_byte_string!(p.write_bytes as f64, Unit::B),
-                    float_to_byte_string!(p.get_write_bytes_sec(&app.histogram_map.tick), Unit::B)
+                    p.write_bytes.to_bytes_str(),
+                    p.get_write_bytes_sec(&app.histogram_map.tick)
+                        .to_bytes_str(),
                 ),
                 rhs_style,
             ),

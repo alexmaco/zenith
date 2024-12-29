@@ -3,6 +3,7 @@
  * Copyright 2019-2020, Benjamin Vaisvil and the zenith contributors
  */
 use crate::constants::DEFAULT_TICK;
+use byte_unit::{Byte, Unit, UnitType};
 use crossterm::{event, event::Event as CEvent, event::KeyCode as Key, event::KeyEvent};
 use signal_hook::consts::signal::{SIGABRT, SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
@@ -165,5 +166,31 @@ pub fn percent_of(numerator: u64, denominator: u64) -> f32 {
         0.0
     } else {
         (numerator as f32 / denominator as f32) * 100.0
+    }
+}
+
+pub trait ToBytesString {
+    fn to_bytes_str(&self) -> String {
+        self.to_bytes_str_in(Unit::B)
+    }
+    fn to_bytes_str_in(&self, unit: Unit) -> String;
+}
+
+impl ToBytesString for f64 {
+    fn to_bytes_str_in(&self, unit: Unit) -> String {
+        custom_format_bytes(Byte::from_f64_with_unit(*self, unit))
+    }
+}
+
+impl ToBytesString for u64 {
+    fn to_bytes_str_in(&self, unit: Unit) -> String {
+        custom_format_bytes(Byte::from_u64_with_unit(*self, unit))
+    }
+}
+
+fn custom_format_bytes(b: Option<Byte>) -> String {
+    match b {
+        Some(b) => format!("{:.2}", b.get_appropriate_unit(UnitType::Decimal)).replace(" ", ""),
+        None => String::from("Err"),
     }
 }

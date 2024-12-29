@@ -5,7 +5,6 @@ mod cpu;
 mod disk;
 mod graphics;
 mod help;
-pub mod macros;
 mod network;
 mod process;
 pub mod section;
