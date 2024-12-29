@@ -54,15 +54,13 @@ where
     }
 }
 
-macro_rules! update_section_height {
-    ($x:expr, $val:expr) => {
-        if $x + $val > 0.0 && $x + $val < 100.0 {
-            $x += $val;
-            true
-        } else {
-            false
-        }
-    };
+fn try_update_clamped(x: &mut f64, val: f64) -> bool {
+    if *x + val > 0.0 && *x + val < 100.0 {
+        *x += val;
+        true
+    } else {
+        false
+    }
 }
 
 #[derive(FromPrimitive, PartialEq, Copy, Clone, Debug, Ord, PartialOrd, Eq)]
@@ -290,14 +288,14 @@ impl<'a> TerminalRenderer<'_> {
         let mut val = delta as f64 * 100.0 / avail_height;
         let selected_index = self.selected_section_index;
         let mut new_geometry = self.section_geometry.to_vec();
-        if update_section_height!(new_geometry[selected_index].1, val) {
+        if try_update_clamped(&mut new_geometry[selected_index].1, val) {
             // reduce proportionately from other sections if the value was updated
             let rest = 100.0 - new_geometry[selected_index].1 + val;
             for (section_index, section) in new_geometry.iter_mut().enumerate() {
                 if section_index != selected_index {
                     let change = section.1 * val / rest;
                     // abort if limits are exceeded
-                    if !update_section_height!(section.1, -change) {
+                    if !try_update_clamped(&mut section.1, -change) {
                         val = 0.0; // abort changes
                         break;
                     }
